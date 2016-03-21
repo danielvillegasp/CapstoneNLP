@@ -118,7 +118,7 @@ Here the data is read from the file and converted into a corpus using the tm (Te
 stage of the project.
 
 ```{r readData, message=FALSE}
-HCCcorpus <- read.HCC(base.path = '../../data/LOCALE/', category=c('twitter', 'news', 'blogs'), n.lines = 25000)
+HCCcorpus <- read.HCC(base.path = '../../data/LOCALE/', category=c('twitter', 'news', 'blogs'), n.lines = 10000)
 v.corpus <- unlist(HCCcorpus)
 
 corpus <- data.frame(names=attributes(v.corpus),
@@ -134,7 +134,7 @@ prof <- readLines("../../data/profanities.txt")
 ```
 
 ### Document Summary
-The number of lines per document i.e. tweets, news and blogs. was limited to 25000. Here, a 
+The number of lines per document i.e. tweets, news and blogs. was limited to 10000. Here, a 
 brief summary of the documents is presented.
 
 ```{r}
@@ -197,7 +197,7 @@ in the text, such tags are removed from the unigrams, otherwise a confounding re
 documents) and the frequency of the unigrams would be introduced. For a more comprehensive tokenization method e.g. a method that
 involves tagging punctuation marks, this might not hold.
 
-```{r ngramCnt, message=FALSE}
+```{r ngramCnt, message=FALSE, warning=FALSE}
 unigrams <- data.frame(unigram=unlist(sapply(tk_corp, function(x){
   x$content
 }))) %>%
@@ -205,7 +205,7 @@ unigrams <- data.frame(unigram=unlist(sapply(tk_corp, function(x){
   dplyr::group_by(unigram) %>%
   dplyr::summarise(cnt=n()) %>%
   ungroup() %>%
-  mutate(w0=unigram, p = cnt / sum(cnt)) %>%
+  mutate(w0=as.character(unigram), p = cnt / sum(cnt)) %>%
   select(w0, cnt, p) %>%
   dplyr::arrange(desc(cnt))
 
@@ -217,8 +217,12 @@ bigrams <- data.frame(bigram=unlist(sapply(bigram_corp, function(x){
   dplyr::group_by(w0, w1) %>%
   dplyr::summarise(cnt=n()) %>%
   ungroup() %>%
-  mutate(p = cnt / sum(cnt)) %>%
-  dplyr::arrange(desc(cnt))
+  inner_join(y=unigrams, by='w0') %>%
+  mutate(p = cnt.x / cnt.y) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(cnt=cnt.x) %>%
+  dplyr::select(w0, w1, cnt, p) %>%
+  dplyr::arrange(desc(p)) 
 
 trigrams <- data.frame(trigram=unlist(sapply(trigram_corp, function(x){
   x$content
@@ -228,8 +232,12 @@ trigrams <- data.frame(trigram=unlist(sapply(trigram_corp, function(x){
   dplyr::group_by(w0, w1, w2) %>%
   dplyr::summarise(cnt=n()) %>%
   ungroup() %>%
-  mutate(p = cnt / sum(cnt)) %>%
-  dplyr::arrange(desc(cnt))
+  inner_join(y=bigrams, by=c("w0" = "w0", "w1" = "w1")) %>%
+  mutate(p = cnt.x / cnt.y) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(cnt=cnt.x) %>%
+  dplyr::select(w0, w1, w2, cnt, p) %>%
+  dplyr::arrange(desc(p)) 
 ```
 
 
@@ -283,7 +291,7 @@ pander(head(bigrams %>%
 The figure below shows the distribution of the probabilities for bigrams.
 
 ```{r bigHist}
-ggplot(bigrams , aes(x=p)) + geom_histogram(binwidth = 0.000001)
+ggplot(bigrams , aes(x=p)) + geom_histogram(bins=40)
 ```
 
 
@@ -316,7 +324,7 @@ pander(head(trigrams %>%
 The figure below shows the distribution of the probabilities for trigrams.
 
 ```{r trigHist}
-ggplot(trigrams , aes(x=p)) + geom_histogram(binwidth = 0.0000001)
+ggplot(trigrams , aes(x=p)) + geom_histogram(bins=40)
 ```
 
 ### Analisys on N-grams Distributions
