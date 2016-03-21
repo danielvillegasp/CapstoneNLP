@@ -18,10 +18,10 @@ knitr::knit_hooks$set(inline = inline_hook)
 ## Introduction
 
 Text produced by humans is a collection of words arranged in certain ways that they met some 
-rules i.e. syntax, grammar, etc. and together are meaningful to other humans. Event hough,
+rules i.e. syntax, grammar, etc. and together are meaningful to other humans. Even though,
 all languages have rules that try to stablish how words should be used and how text should be 
 written, there are cases when errors are made and sets of words that are meaningful do not
-follow certain rules.
+follow some of the rules.
 
 The meaning of a sentence or a text does not only relay on it´s structure, meaning also relies on
 experiences, culture, context, etc. Sentences such as "That sucks", although it sounds like
@@ -118,7 +118,7 @@ Here the data is read from the file and converted into a corpus using the tm (Te
 stage of the project.
 
 ```{r readData, message=FALSE}
-HCCcorpus <- read.HCC(base.path = '../../data/LOCALE/', category=c('twitter', 'news', 'blogs'), n.lines = 5000)
+HCCcorpus <- read.HCC(base.path = '../../data/LOCALE/', category=c('twitter', 'news', 'blogs'), n.lines = 25000)
 v.corpus <- unlist(HCCcorpus)
 
 corpus <- data.frame(names=attributes(v.corpus),
@@ -134,8 +134,8 @@ prof <- readLines("../../data/profanities.txt")
 ```
 
 ### Document Summary
-The number of lines per document i.e. tweets, news and blogs. was limited to 5000. Here, a brief
-summary of the documents is presented.
+The number of lines per document i.e. tweets, news and blogs. was limited to 25000. Here, a 
+brief summary of the documents is presented.
 
 ```{r}
 ggplot(corpus, aes(x=nwords)) + 
@@ -366,7 +366,8 @@ small probablity links that are derived from the training set but that may have
 not been seen during the training process.
 
 ```{r}
-bigrams2 <- bigrams[sample(700),]
+bigrams2 <- bigrams[c(sample(1:1000, 500), 
+                      sample(1001:nrow(bigrams), 500)),]
 simpleNetwork(data.frame(bigrams2$w0, bigrams2$w1))
 ```
 
@@ -376,7 +377,9 @@ is to show how relations change when a larger number of bigrams is used.
 #### Betweenness Centrality
 
 ```{r}
-bigram_graph <- graph.data.frame(bigrams %>% mutate(weight=p) %>%select(w0,w1,weight), directed = T)
+bigram_graph <- graph.data.frame(bigrams %>% 
+                                   mutate(weight=p) %>%
+                                   select(w0,w1,weight), directed = T)
 ```
 
 ```{r}
@@ -394,9 +397,10 @@ btnc <- btnc %>%
 ```
 
 ```{r}
-  ggplot(inner_join(btnc, bigrams %>% mutate(Word=w0), by='Word'),
+  ggplot(inner_join(btnc, unigrams %>% mutate(Word=w0), by='Word'),
          aes(x=p, y=Betweenness)) +
     geom_point() +
+    geom_smooth() + 
     xlab('Unigram Probability') +
     ylab('Unigram Betweenness') +
     ggtitle('Unigram Betweenness vs. Unigram Probability')
@@ -428,4 +432,13 @@ better knowledge of the context of the sentence.
 * Given the strong influence of profanities, such words should be handled by the learning
 algorithm rather than being discarded from the training set.
 * As N becomes larger, N-gram distributions become more uniform.
-* A more efficient way of handling the large datasets will have to be implemented for the shiny app.
+* A more efficient way of handling the large datasets will have to be implemented for the shiny 
+app.
+* A strong relation between centrality measure of nodes from the bigram graph and the
+unigram probabilities was found. Such relation shows that in a way, the set of all
+bigrams preserves information about the set of all unigrams. The relationship found and other 
+relations based on graph measures might be useful to create new features for the 
+learning algorithm.
+
+
+
