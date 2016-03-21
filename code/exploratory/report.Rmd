@@ -118,7 +118,7 @@ Here the data is read from the file and converted into a corpus using the tm (Te
 stage of the project.
 
 ```{r readData, message=FALSE}
-HCCcorpus <- read.HCC(base.path = '../../data/LOCALE/', category=c('twitter', 'news', 'blogs'), n.lines = 10000)
+HCCcorpus <- read.HCC(base.path = '../../data/LOCALE/', category=c('twitter', 'news', 'blogs'), n.lines = 5000)
 v.corpus <- unlist(HCCcorpus)
 
 corpus <- data.frame(names=attributes(v.corpus),
